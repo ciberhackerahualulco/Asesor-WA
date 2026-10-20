@@ -1,0 +1,1 @@
+https://wa.me/<numero>?text=<mensaje_urlencoded>
