@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#004481" />
+  <title>Asesor WA</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  
+  <!-- Librería para leer Excel -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bbva-blue: #004481;
+      --wa-green: #25D366;
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --gold: #D4AF37;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+
+    /* Encabezado */
+    .header { text-align: center; margin-bottom: 16px; }
+    .header h1 { font-size: 1.4rem; color: var(--bbva-blue); font-weight: 800; letter-spacing: -0.5px; }
+    .header p { font-size: 0.8rem; color: var(--text-light); margin-bottom: 8px; }
+    
+    /* Botón de Instalar App */
+    #btnInstall {
+      display: none; /* Oculto por defecto hasta que el navegador lo permita */
+      margin: 0 auto;
+      background: var(--bbva-blue);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,68,129,0.2);
+    }
+
+    /* Tarjetas */
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+
+    /* Selector Segmentado */
+    .segment-control {
+      display: flex; background: #e5e7eb; border-radius: 10px; padding: 4px; margin-bottom: 8px;
+    }
+    .segment-control input[type="radio"] { display: none; }
+    .segment-control label {
+      flex: 1; text-align: center; padding: 10px 4px; font-size: 0.85rem;
+      font-weight: 700; color: var(--text-light); border-radius: 8px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .segment-control input[type="radio"]:checked + label {
+      background: var(--card); color: var(--bbva-blue);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Formularios */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-light); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select {
+      width: 100%; padding: 12px; font-size: 0.95rem; font-family: inherit;
+      border: 1.5px solid var(--border); border-radius: 10px; background: #f9fafb;
+      transition: all 0.2s; color: var(--text);
+    }
+    input:focus, select:focus { outline: none; border-color: var(--bbva-blue); background: #fff; }
+
+    /* Botón de Importar Excel */
+    .btn-excel {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px; background: #1d6f42; color: white;
+      border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-excel:active { background: #145230; }
+    .file-input { display: none; }
+
+    /* Progreso */
+    .progress-text {
+      font-size: 0.8rem; color: var(--bbva-blue); font-weight: 700;
+      margin-top: 8px; text-align: center; display: none;
+    }
+
+    /* Footer Crédito */
+    .footer-credit { text-align: center; font-size: 0.7rem; color: var(--text-light); margin: 20px 0; }
+    .gold-text { color: var(--gold); font-weight: 800; display: block; margin-top: 2px; font-size: 0.8rem; }
+
+    /* Botón Sticky */
+    .sticky-bar {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: rgba(243,244,246,0.95); backdrop-filter: blur(8px);
+      border-top: 1px solid var(--border);
+    }
+    button.btn-send {
+      width: 100%; padding: 16px; font-size: 1.05rem; font-weight: 700;
+      color: #fff; background: var(--wa-green); border: none; border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(37,211,102,0.3); cursor: pointer;
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+      transition: transform 0.1s;
+    }
+    button.btn-send:active { transform: scale(0.98); }
+
+    /* Toast */
+    .toast {
+      position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(20px);
+      background: #1f2937; color: #fff; padding: 12px 20px; border-radius: 30px;
+      font-size: 0.9rem; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 50;
+      pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: max-content; max-width: 90%;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Asesor WA</h1>
+    <p>Envío rápido de ofertas</p>
+    <button id="btnInstall">📲 Instalar Aplicación</button>
+  </div>
+
+  <!-- IMPORTAR EXCEL -->
+  <div class="card" style="padding: 12px;">
+    <input type="file" id="excelFile" class="file-input" accept=".xlsx, .xls, .csv" />
+    <label for="excelFile" class="btn-excel">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      Importar lista (Excel / CSV)
+    </label>
+    <div class="progress-text" id="progressText">0 de 0 contactados</div>
+  </div>
+
+  <!-- LISTA DE CLIENTES IMPORTADOS -->
+  <div class="card" id="listaClientesCard" style="display: none; border: 2px solid var(--wa-green);">
+    <label for="selectCliente" style="color: var(--wa-green);">👥 Cliente actual</label>
+    <select id="selectCliente">
+      <option value="">-- Seleccionar --</option>
+    </select>
+  </div>
+
+  <!-- SELECTOR DE PRODUCTO -->
+  <div class="card" style="padding: 12px;">
+    <div class="segment-control">
+      <input type="radio" id="tdc" name="producto" value="tdc" checked>
+      <label for="tdc">💳 TDC</label>
+      
+      <input type="radio" id="nomina" name="producto" value="nomina">
+      <label for="nomina">🏢 Nómina</label>
+      
+      <input type="radio" id="personal" name="producto" value="personal">
+      <label for="personal">👤 Personal</label>
+    </div>
+  </div>
+
+  <!-- DATOS DEL CLIENTE -->
+  <div class="card">
+    <div class="field">
+      <label for="telefono">📱 WhatsApp del cliente</label>
+      <input id="telefono" type="tel" inputmode="numeric" placeholder="Ej. 3322699311" />
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="nombre">👤 Primer nombre</label>
+        <input id="nombre" type="text" placeholder="Luis" />
+      </div>
+      <div class="field">
+        <label for="monto">💵 Monto (MXN)</label>
+        <input id="monto" type="text" inputmode="decimal" placeholder="50000" />
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="folio">🆔 Folio / Cliente (Opcional)</label>
+        <input id="folio" type="text" placeholder="Ej. B6235935" />
+      </div>
+      <div class="field">
+        <label for="fecha">📅 Vigencia</label>
+        <input id="fecha" type="text" placeholder="30 de Octubre" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="asesor">🧑‍💼 Tu nombre (Asesor)</label>
+      <input id="asesor" type="text" value="Abraham" />
+    </div>
+  </div>
+
+  <!-- CRÉDITO -->
+  <div class="footer-credit">
+    Herramienta para apoyo comercial<br>
+    <span class="gold-text">✨ Lic. Abraham Fernando Ulloa O. ✨</span>
+  </div>
+
+  <!-- BOTÓN DE ENVÍO -->
+  <div class="sticky-bar">
+    <button type="button" class="btn-send" id="btnSend">
+      <span>Enviar y Siguiente</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function calcularFechaFutura() {
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() + 10);
+      const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      return `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+    }
+
+    function formatearMonto(valor) {
+      if(!valor) return '';
+      let num = parseFloat(valor.toString().replace(/,/g, ''));
+      if (isNaN(num)) return valor; 
+      return num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function mostrarToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t.timer);
+      t.timer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // ==========================================
+    // LÓGICA DE INSTALACIÓN PWA
+    // ==========================================
+    let deferredPrompt;
+    const btnInstall = $('btnInstall');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btnInstall.style.display = 'block';
+    });
+
+    btnInstall.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('Para instalar la app, abre el menú de tu navegador (los 3 puntos) y selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        btnInstall.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      btnInstall.style.display = 'none';
+      mostrarToast('✅ ¡App instalada con éxito!');
+    });
+
+    // ==========================================
+    // LÓGICA DE IMPORTACIÓN DE EXCEL
+    // ==========================================
+    let clientesImportados = [];
+    let indexActual = -1;
+
+    function actualizarProgreso() {
+      if(clientesImportados.length === 0) return;
+      const contactados = clientesImportados.filter(c => c.contactado).length;
+      $('progressText').textContent = `${contactados} de ${clientesImportados.length} contactados`;
+      $('progressText').style.display = 'block';
+    }
+
+    $('excelFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          const json = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+
+          if (json.length === 0) { mostrarToast('⚠️ El archivo está vacío'); return; }
+
+          clientesImportados = json.filter(row => (row.Nombre || row.nombre) && (row.Telefono || row.telefono));
+          
+          if (clientesImportados.length === 0) {
+            mostrarToast('⚠️ Faltan columnas "Nombre" y "Telefono"');
+            return;
+          }
+
+          clientesImportados.forEach(cli => cli.contactado = false);
+          indexActual = -1;
+
+          const select = $('selectCliente');
+          select.innerHTML = '<option value="">-- Seleccionar --</option>';
+          
+          clientesImportados.forEach((cli, index) => {
+            const nombre = cli.Nombre || cli.nombre;
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = nombre;
+            select.appendChild(option);
+          });
+
+          $('listaClientesCard').style.display = 'block';
+          actualizarProgreso();
+          mostrarToast(`✅ ${clientesImportados.length} clientes importados`);
+
+          select.value = "0";
+          select.dispatchEvent(new Event('change'));
+
+        } catch (error) {
+          console.error(error);
+          mostrarToast('❌ Error al leer el archivo');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    $('selectCliente').addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === '') {
+        indexActual = -1;
+        return;
+      }
+
+      indexActual = parseInt(val);
+      const cli = clientesImportados[indexActual];
+      
+      $('nombre').value = cli.Nombre || cli.nombre || '';
+      $('telefono').value = cli.Telefono || cli.telefono || '';
+      $('monto').value = cli.Monto || cli.monto || '';
+      $('folio').value = cli.Folio || cli.folio || cli.Cliente || cli.cliente || '';
+      
+      if (cli.Fecha || cli.fecha) {
+        $('fecha').value = cli.Fecha || cli.fecha;
+      }
+
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+
+    // ==========================================
+    // LÓGICA DE MENSAJE Y ENVÍO
+    // ==========================================
+    function construirMensaje() {
+      const producto = document.querySelector('input[name="producto"]:checked').value;
+      const nombre = $('nombre').value.trim();
+      const asesor = $('asesor').value.trim() || 'Abraham';
+      const monto = formatearMonto($('monto').value.trim());
+      const fecha = $('fecha').value.trim();
+      const folio = $('folio').value.trim();
+
+      const textoFolio = folio ? ` (Folio: ${folio})` : '';
+
+      let ofertaTexto = '';
+      let cierreTexto = '';
+
+      if (producto === 'tdc') {
+        ofertaTexto = `Tienes disponible un efectivo de hasta *$${monto}* de tu tarjeta de crédito`;
+        cierreTexto = `¿Te gustaría que revisáramos las opciones juntos? Quedo atento. ¡Saludos!`;
+      } else if (producto === 'nomina') {
+        ofertaTexto = `Tienes preaprobado un crédito de nómina por hasta *$${monto}*`;
+        cierreTexto = `¿Te interesa conocer los detalles? Estoy a tus órdenes. ¡Saludos!`;
+      } else {
+        ofertaTexto = `Tienes disponible un crédito personal por hasta *$${monto}*`;
+        cierreTexto = `Si te interesa, con gusto te comparto los detalles. ¡Saludos!`;
+      }
+
+      return `Hola *${nombre}* 👋
+
+Soy *${asesor}*, asesor de BBVA Tequila.
+
+${ofertaTexto}, con vigencia hasta el *${fecha}*.${textoFolio}
+
+${cierreTexto}`;
+    }
+
+    $('fecha').value = calcularFechaFutura();
+
+    $('btnSend').addEventListener('click', () => {
+      let tel = $('telefono').value.replace(/\D/g, '');
+      const nombre = $('nombre').value.trim();
+      const monto = $('monto').value.trim();
+
+      if (!nombre) { mostrarToast('⚠️ Falta el nombre'); $('nombre').focus(); return; }
+      if (!monto) { mostrarToast('⚠️ Falta el monto'); $('monto').focus(); return; }
+      if (tel.length < 10) { mostrarToast('⚠️ Teléfono inválido'); $('telefono').focus(); return; }
+
+      if (tel.length === 10) tel = '52' + tel;
+
+      const textoFinal = construirMensaje();
+      const url = `https://wa.me/${tel}?text=${encodeURIComponent(textoFinal)}`;
+      
+      window.open(url, '_blank');
+
+      if (clientesImportados.length > 0 && indexActual !== -1) {
+        clientesImportados[indexActual].contactado = true;
+        
+        const select = $('selectCliente');
+        const currentOption = select.options[select.selectedIndex];
+        if(!currentOption.textContent.startsWith('✅')) {
+          currentOption.textContent = '✅ ' + currentOption.textContent;
+        }
+
+        actualizarProgreso();
+
+        let nextIndex = -1;
+        for (let i = indexActual + 1; i < clientesImportados.length; i++) {
+          if (!clientesImportados[i].contactado) { nextIndex = i; break; }
+        }
+        if (nextIndex === -1) {
+          for (let i = 0; i < clientesImportados.length; i++) {
+            if (!clientesImportados[i].contactado) { nextIndex = i; break; }
+          }
+        }
+
+        if (nextIndex !== -1) {
+          select.value = nextIndex;
+          select.dispatchEvent(new Event('change'));
+          mostrarToast(`✅ Enviado. Siguiente: ${clientesImportados[nextIndex].Nombre || clientesImportados[nextIndex].nombre}`);
+        } else {
+          select.value = "";
+          indexActual = -1;
+          $('telefono').value = ''; $('nombre').value = ''; $('monto').value = ''; $('folio').value = '';
+          mostrarToast('🎉 ¡Ya contactaste a todos los de la lista!');
+        }
+
+      } else {
+        $('telefono').value = '';
+        $('nombre').value = '';
+        $('monto').value = '';
+        $('folio').value = '';
+        mostrarToast('✅ Abriendo WhatsApp...');
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
