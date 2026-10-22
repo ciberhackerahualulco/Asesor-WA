@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#004481" />
+  <title>Asesora X WhatsApp</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bbva-blue: #004481;
+      --wa-green: #25D366;
+      --wa-dark: #128C7E;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #111827;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --gold: #D4AF37;
+      --input-bg: #f3f4f6;
+      --input-focus-bg: #ffffff;
+    }
+
+    body.dark-mode {
+      --bbva-blue: #3b82f6;
+      --bg: #111827;
+      --card: #1f2937;
+      --text: #f9fafb;
+      --text-light: #9ca3af;
+      --border: #374151;
+      --input-bg: #374151;
+      --input-focus-bg: #4b5563;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      padding-bottom: 120px; 
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* Controles Superiores */
+    .top-controls {
+      position: fixed;
+      top: 16px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .top-buttons-right {
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+    .btn-circle {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .btn-circle:active { transform: scale(0.9); }
+    
+    #btnInstall {
+      display: flex; /* Siempre visible */
+      background: var(--bbva-blue);
+      color: #fff;
+      border: none;
+      padding: 0 16px;
+      height: 44px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,68,129,0.3);
+      align-items: center;
+    }
+
+    /* Encabezado */
+    .header { text-align: center; margin-bottom: 20px; margin-top: 40px; }
+    .header h1 { font-size: 1.5rem; color: var(--bbva-blue); font-weight: 800; letter-spacing: -0.5px; }
+    .header p { font-size: 0.85rem; color: var(--text-light); font-weight: 500; }
+
+    /* Tarjetas */
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      transition: background 0.3s, border 0.3s;
+    }
+
+    /* Selector Segmentado */
+    .segment-control {
+      display: flex; background: var(--input-bg); border-radius: 14px; padding: 4px; gap: 4px;
+    }
+    .segment-control input[type="radio"] { display: none; }
+    .segment-control label {
+      flex: 1; text-align: center; padding: 10px 2px; font-size: 0.75rem;
+      font-weight: 700; color: var(--text-light); border-radius: 10px; cursor: pointer;
+      transition: all 0.2s ease; white-space: nowrap;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .segment-control label .icon { font-size: 1.2rem; }
+    .segment-control input[type="radio"]:checked + label {
+      background: var(--card); color: var(--bbva-blue);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Formularios */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 0.7rem; font-weight: 800; color: var(--text-light); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select {
+      width: 100%; padding: 14px; font-size: 1rem; font-family: inherit;
+      border: 2px solid transparent; border-radius: 12px; background: var(--input-bg);
+      transition: all 0.2s; color: var(--text); font-weight: 600;
+    }
+    input:focus, select:focus { 
+      outline: none; border-color: var(--bbva-blue); background: var(--input-focus-bg); 
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+    }
+
+    /* Botones Excel */
+    .btn-excel {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px; background: #1d6f42; color: white;
+      border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      transition: background 0.2s; border: none; margin-bottom: 8px;
+    }
+    .btn-excel:active { background: #145230; }
+    .btn-export {
+      display: none; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px; background: transparent; color: #1d6f42;
+      border: 2px solid #1d6f42; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+    }
+    body.dark-mode .btn-export { color: #25D366; border-color: #25D366; }
+    .file-input { display: none; }
+
+    /* Progreso */
+    .progress-text {
+      font-size: 0.8rem; color: var(--bbva-blue); font-weight: 800;
+      margin-top: 10px; text-align: center; display: none;
+      background: var(--input-bg); padding: 8px; border-radius: 8px;
+    }
+
+    /* Vista Previa del Mensaje */
+    .preview-container {
+      display: none; margin-top: 16px; padding: 16px;
+      background: #e5ddd5; border-radius: 12px;
+    }
+    body.dark-mode .preview-container { background: #0b141a; }
+    .preview-bubble {
+      background: #dcf8c6; padding: 12px; border-radius: 12px; border-top-left-radius: 0;
+      font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    body.dark-mode .preview-bubble { background: #005c4b; color: #e9edef; }
+    .btn-preview {
+      background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
+      padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+      cursor: pointer; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    }
+
+    /* Footer */
+    .footer-credit { text-align: center; font-size: 0.7rem; color: var(--text-light); margin: 20px 0; font-weight: 500;}
+    .gold-text { color: var(--gold); font-weight: 800; display: block; margin-top: 4px; font-size: 0.85rem; }
+
+    /* Botones Flotantes */
+    .floating-button-container {
+      position: fixed; bottom: 24px; left: 0; right: 0;
+      display: flex; justify-content: center; gap: 10px;
+      z-index: 999; pointer-events: none; padding: 0 16px;
+    }
+    
+    button.btn-send {
+      pointer-events: auto; flex: 2; max-width: 300px;
+      padding: 18px 20px; font-size: 1.05rem; font-weight: 800; color: #fff; 
+      background: linear-gradient(135deg, var(--wa-green), var(--wa-dark)); 
+      border: none; border-radius: 40px;
+      box-shadow: 0 10px 25px -5px rgba(37,211,102,0.5);
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+      transition: transform 0.1s;
+    }
+    button.btn-send:active { transform: scale(0.96); }
+
+    button.btn-skip {
+      pointer-events: auto; flex: 1; max-width: 120px;
+      padding: 18px 10px; font-size: 0.9rem; font-weight: 800; color: var(--text); 
+      background: var(--card); border: 2px solid var(--border); border-radius: 40px;
+      display: flex; justify-content: center; align-items: center; gap: 4px;
+      transition: transform 0.1s;
+    }
+    button.btn-skip:active { transform: scale(0.96); background: var(--input-bg); }
+
+    /* Toast */
+    .toast {
+      position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(20px);
+      background: #1f2937; color: #fff; padding: 14px 24px; border-radius: 30px;
+      font-size: 0.9rem; font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 1000;
+      pointer-events: none; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: max-content; max-width: 90%;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <div class="top-controls">
+    <button class="btn-circle" id="btnDarkMode">🌙</button>
+    <div class="top-buttons-right">
+      <button id="btnInstall">📲 Instalar</button>
+      <button class="btn-circle" id="btnResetList" title="Borrar lista y progreso">🗑️</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1>Asesora X WhatsApp</h1>
+    <p>Envío rápido de ofertas</p>
+  </div>
+
+  <!-- IMPORTAR / EXPORTAR EXCEL -->
+  <div class="card" style="padding: 12px;">
+    <input type="file" id="excelFile" class="file-input" accept=".xlsx, .xls, .csv" />
+    <label for="excelFile" class="btn-excel">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      Importar lista (Excel / CSV)
+    </label>
+    
+    <button id="btnExport" class="btn-export">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Descargar Reporte
+    </button>
+
+    <div class="progress-text" id="progressText">0 de 0 contactados</div>
+  </div>
+
+  <!-- LISTA DE CLIENTES -->
+  <div class="card" id="listaClientesCard" style="display: none; border: 2px solid var(--wa-green);">
+    <label for="selectCliente" style="color: var(--wa-green);">👥 Cliente actual</label>
+    <select id="selectCliente">
+      <option value="">-- Seleccionar --</option>
+    </select>
+  </div>
+
+  <!-- SELECTOR DE PRODUCTO -->
+  <div class="card" style="padding: 12px;">
+    <div class="segment-control">
+      <input type="radio" id="efi" name="producto" value="efi" checked>
+      <label for="efi"><span class="icon">💰</span> EFI</label>
+      
+      <input type="radio" id="nomina" name="producto" value="nomina">
+      <label for="nomina"><span class="icon">🏢</span> Nómina</label>
+      
+      <input type="radio" id="personal" name="producto" value="personal">
+      <label for="personal"><span class="icon">👤</span> Personal</label>
+
+      <input type="radio" id="tdc" name="producto" value="tdc">
+      <label for="tdc"><span class="icon">💳</span> TDC</label>
+    </div>
+  </div>
+
+  <!-- DATOS DEL CLIENTE -->
+  <div class="card">
+    <div class="grid-2">
+      <div class="field">
+        <label for="folio">🆔 Cliente (Folio)</label>
+        <input id="folio" type="text" placeholder="Ej. B6235935" />
+      </div>
+      <div class="field">
+        <label for="nombre">👤 Nombre</label>
+        <input id="nombre" type="text" placeholder="Luis" />
+      </div>
+    </div>
+    
+    <div class="grid-2">
+      <div class="field">
+        <label for="monto">💵 Oferta (MXN)</label>
+        <input id="monto" type="text" inputmode="decimal" placeholder="50,000" />
+      </div>
+      <div class="field">
+        <label for="telefono">📱 Teléfono</label>
+        <input id="telefono" type="tel" inputmode="numeric" placeholder="Ej. 3322699311" />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="fecha">📅 Vigencia</label>
+        <input id="fecha" type="text" placeholder="30 de Octubre" />
+      </div>
+      <div class="field">
+        <label for="asesor">🧑‍💼 Asesora</label>
+        <input id="asesor" type="text" value="Abraham" />
+      </div>
+    </div>
+
+    <button type="button" class="btn-preview" id="btnPreview">
+      👁️ Ver vista previa del mensaje
+    </button>
+
+    <div class="preview-container" id="previewContainer">
+      <div class="preview-bubble" id="previewBubble"></div>
+    </div>
+  </div>
+
+  <div class="footer-credit">
+    Herramienta para apoyo comercial<br>
+    <span class="gold-text">✨ Lic. Abraham Fernando Ulloa O. ✨</span>
+  </div>
+
+  <!-- BOTONES FLOTANTES -->
+  <div class="floating-button-container">
+    <button type="button" class="btn-skip" id="btnSkip">
+      Omitir ⏭️
+    </button>
+    <button type="button" class="btn-send" id="btnSend">
+      <span>Enviar</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    // ==========================================
+    // SONIDO Y VIBRACIÓN
+    // ==========================================
+    function playClickSound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {}
+    }
+    function vibrar() { if (navigator.vibrate) navigator.vibrate(50); }
+
+    // ==========================================
+    // MODO OSCURO
+    // ==========================================
+    const btnDarkMode = $('btnDarkMode');
+    if (localStorage.getItem('darkMode') === 'enabled') {
+      document.body.classList.add('dark-mode');
+      btnDarkMode.textContent = '☀️';
+    }
+    btnDarkMode.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+        btnDarkMode.textContent = '☀️';
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+        btnDarkMode.textContent = '🌙';
+      }
+      playClickSound();
+    });
+
+    // ==========================================
+    // FUNCIONES GENERALES
+    // ==========================================
+    function calcularFechaFutura() {
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() + 10);
+      const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+      return `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+    }
+    function formatearMonto(valor) {
+      if(!valor) return '';
+      let num = parseFloat(valor.toString().replace(/,/g, ''));
+      if (isNaN(num)) return valor; 
+      return num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function mostrarToast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t.timer);
+      t.timer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // AUTO-FORMATO CORREGIDO (Más fluido, no salta el cursor)
+    $('monto').addEventListener('input', function(e) {
+      let value = this.value.replace(/,/g, '').replace(/[^0-9.]/g, '');
+      let parts = value.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      this.value = parts.join('.');
+      actualizarPreview();
+    });
+
+    // ==========================================
+    // VISTA PREVIA
+    // ==========================================
+    const btnPreview = $('btnPreview');
+    const previewContainer = $('previewContainer');
+    
+    btnPreview.addEventListener('click', () => {
+      if (previewContainer.style.display === 'block') {
+        previewContainer.style.display = 'none';
+        btnPreview.innerHTML = '👁️ Ver vista previa del mensaje';
+      } else {
+        actualizarPreview();
+        previewContainer.style.display = 'block';
+        btnPreview.innerHTML = '🙈 Ocultar vista previa';
+      }
+      playClickSound();
+    });
+
+    function actualizarPreview() {
+      if (previewContainer.style.display === 'block') {
+        $('previewBubble').textContent = construirMensaje();
+      }
+    }
+
+    // ==========================================
+    // CONSTRUIR MENSAJE
+    // ==========================================
+    function construirMensaje() {
+      const producto = document.querySelector('input[name="producto"]:checked').value;
+      const nombre = $('nombre').value.trim() || '[Nombre]';
+      const asesor = $('asesor').value.trim() || 'Abraham';
+      const monto = formatearMonto($('monto').value.trim()) || '[Monto]';
+      const fecha = $('fecha').value.trim() || '[Vigencia]';
+      const folio = $('folio').value.trim();
+
+      const textoFolio = folio ? ` (Folio: ${folio})` : '';
+      let ofertaTexto = '';
+      let cierreTexto = `¿Te gustaría que revisáramos las opciones juntos? Quedo atento. ¡Saludos!`;
+
+      if (producto === 'efi') {
+        ofertaTexto = `Tienes disponible un efectivo (EFI) de hasta *$${monto}* de tu tarjeta de crédito`;
+      } else if (producto === 'nomina') {
+        ofertaTexto = `Tienes preaprobado un crédito de nómina por hasta *$${monto}*`;
+        cierreTexto = `¿Te interesa conocer los detalles? Estoy a tus órdenes. ¡Saludos!`;
+      } else if (producto === 'personal') {
+        ofertaTexto = `Tienes disponible un crédito personal por hasta *$${monto}*`;
+        cierreTexto = `Si te interesa, con gusto te comparto los detalles. ¡Saludos!`;
+      } else if (producto === 'tdc') {
+        ofertaTexto = `Tienes una oferta especial para tu Tarjeta de Crédito por hasta *$${monto}*`;
+        cierreTexto = `¿Te gustaría conocer los beneficios? Quedo atento. ¡Saludos!`;
+      }
+
+      return `Hola *${nombre}* 👋
+
+Soy *${asesor}*, asesor de BBVA Tequila.
+
+${ofertaTexto}, con vigencia hasta el *${fecha}*.${textoFolio}
+
+${cierreTexto}`;
+    }
+
+    ['nombre', 'asesor', 'fecha', 'folio'].forEach(id => {
+      $(id).addEventListener('input', actualizarPreview);
+    });
+    document.querySelectorAll('input[name="producto"]').forEach(radio => {
+      radio.addEventListener('change', actualizarPreview);
+    });
+
+    // ==========================================
+    // VARIABLES GLOBALES Y LOCALSTORAGE
+    // ==========================================
+    let clientesImportados = [];
+    let indexActual = -1;
+    
+    // Mejora #2: Contador diario
+    let enviadosHoy = parseInt(localStorage.getItem('asesorWA_enviadosHoy') || '0');
+    let fechaHoyStr = localStorage.getItem('asesorWA_fechaHoy');
+    const hoyStr = new Date().toDateString();
+
+    if (fechaHoyStr !== hoyStr) {
+      enviadosHoy = 0;
+      localStorage.setItem('asesorWA_enviadosHoy', enviadosHoy);
+      localStorage.setItem('asesorWA_fechaHoy', hoyStr);
+    }
+
+    function guardarProgreso() {
+      if (clientesImportados.length > 0) {
+        localStorage.setItem('asesorWA_lista', JSON.stringify(clientesImportados));
+        localStorage.setItem('asesorWA_index', indexActual);
+      } else {
+        localStorage.removeItem('asesorWA_lista');
+        localStorage.removeItem('asesorWA_index');
+      }
+    }
+
+    function cargarProgreso() {
+      const savedList = localStorage.getItem('asesorWA_lista');
+      if (savedList) {
+        try {
+          clientesImportados = JSON.parse(savedList);
+          if (clientesImportados.length > 0) {
+            const select = $('selectCliente');
+            select.innerHTML = '<option value="">-- Seleccionar --</option>';
+            clientesImportados.forEach((cli, index) => {
+              const option = document.createElement('option');
+              option.value = index;
+              let prefix = cli.contactado ? '✅ ' : '';
+              option.textContent = cli.folio ? `${prefix}${cli.nombre} (${cli.folio})` : `${prefix}${cli.nombre}`;
+              select.appendChild(option);
+            });
+
+            $('listaClientesCard').style.display = 'block';
+            $('btnExport').style.display = 'flex';
+            actualizarProgreso();
+
+            const savedIndex = localStorage.getItem('asesorWA_index');
+            if (savedIndex !== null && savedIndex !== '-1' && select.options[parseInt(savedIndex)+1]) {
+              select.value = savedIndex;
+              select.dispatchEvent(new Event('change'));
+            }
+          }
+        } catch (e) { console.log("Error cargando progreso"); }
+      }
+    }
+
+    function actualizarProgreso() {
+      if(clientesImportados.length === 0) {
+        $('progressText').style.display = 'none';
+        return;
+      }
+      const contactados = clientesImportados.filter(c => c.contactado).length;
+      $('progressText').innerHTML = `✅ ${contactados} de ${clientesImportados.length} contactados<br>📤 ${enviadosHoy} enviados hoy`;
+      $('progressText').style.display = 'block';
+    }
+
+    function getValor(row, posiblesKeys) {
+      const rowKeys = Object.keys(row);
+      for (const key of rowKeys) {
+        const keyNorm = key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        for (const posKey of posiblesKeys) {
+          if (keyNorm === posKey) return row[key];
+        }
+      }
+      return '';
+    }
+
+    // ==========================================
+    // RESET LISTA
+    // ==========================================
+    $('btnResetList').addEventListener('click', () => {
+      if(confirm('¿Estás seguro de borrar la lista actual y reiniciar el progreso?')) {
+        clientesImportados = [];
+        indexActual = -1;
+        localStorage.removeItem('asesorWA_lista');
+        localStorage.removeItem('asesorWA_index');
+        $('listaClientesCard').style.display = 'none';
+        $('btnExport').style.display = 'none';
+        $('progressText').style.display = 'none';
+        $('folio').value = ''; $('nombre').value = ''; $('monto').value = ''; $('telefono').value = '';
+        mostrarToast('🗑️ Lista borrada. Puedes importar otra.');
+        playClickSound();
+      }
+    });
+
+    // ==========================================
+    // IMPORTAR Y EXPORTAR EXCEL
+    // ==========================================
+    $('excelFile').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
+
+          if (json.length === 0) { mostrarToast('⚠️ El archivo está vacío'); return; }
+
+          let invalidos = 0;
+          clientesImportados = json.map(row => {
+            let montoStr = getValor(row, ['monto', 'oferta', 'credito', 'importe']);
+            // Mejora #3: Validar que el monto sea un número
+            if (montoStr && isNaN(parseFloat(montoStr.toString().replace(/,/g, '')))) {
+              invalidos++;
+            }
+            
+            return {
+              nombre: getValor(row, ['nombre', 'name', 'primer nombre']),
+              telefono: getValor(row, ['telefono', 'phone', 'celular', 'whatsapp', 'numero']),
+              monto: montoStr,
+              folio: getValor(row, ['folio', 'cliente', 'id', 'numero de cliente']),
+              fecha: getValor(row, ['fecha', 'vigencia']),
+              contactado: false
+            };
+          }).filter(cli => cli.nombre && cli.telefono);
+          
+          if (clientesImportados.length === 0) { mostrarToast('⚠️ Faltan datos (Nombre y Teléfono)'); return; }
+
+          if (invalidos > 0) {
+            mostrarToast(`⚠️ ${invalidos} montos tienen texto en lugar de números. Revísalos.`);
+          } else {
+            mostrarToast(`✅ ${clientesImportados.length} clientes importados`);
+          }
+
+          indexActual = -1;
+          const select = $('selectCliente');
+          select.innerHTML = '<option value="">-- Seleccionar --</option>';
+          clientesImportados.forEach((cli, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = cli.folio ? `${cli.nombre} (${cli.folio})` : cli.nombre;
+            select.appendChild(option);
+          });
+
+          $('listaClientesCard').style.display = 'block';
+          $('btnExport').style.display = 'flex';
+          guardarProgreso();
+          actualizarProgreso();
+
+          select.value = "0";
+          select.dispatchEvent(new Event('change'));
+        } catch (error) {
+          mostrarToast('❌ Error al leer el archivo');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      e.target.value = '';
+    });
+
+    $('btnExport').addEventListener('click', () => {
+      if (clientesImportados.length === 0) return;
+      playClickSound();
+      
+      const fechaStr = new Date().toLocaleString('es-MX');
+      const asesorName = $('asesor').value.trim() || 'Abraham';
+
+      const dataReporte = clientesImportados.map(c => ({
+        Folio: c.folio,
+        Nombre: c.nombre,
+        Telefono: c.telefono,
+        Monto: c.monto,
+        Vigencia: c.fecha,
+        Estado: c.contactado ? 'Contactado ✅' : 'Pendiente ⏳',
+        Asesor: asesorName,
+        'Fecha de gestión': c.contactado ? fechaStr : ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dataReporte);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+      XLSX.writeFile(wb, `Reporte_Asesora_${new Date().toLocaleDateString('es-MX').replace(/\//g, '-')}.xlsx`);
+      mostrarToast('📥 Reporte descargado');
+    });
+
+    $('selectCliente').addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === '') { indexActual = -1; guardarProgreso(); return; }
+
+      indexActual = parseInt(val);
+      const cli = clientesImportados[indexActual];
+      
+      $('folio').value = cli.folio;
+      $('nombre').value = cli.nombre;
+      $('telefono').value = cli.telefono;
+      
+      if (cli.monto) {
+        let num = parseFloat(cli.monto.toString().replace(/,/g, ''));
+        $('monto').value = isNaN(num) ? cli.monto : num.toLocaleString('es-MX');
+      } else {
+        $('monto').value = '';
+      }
+      
+      // Si el cliente no tiene fecha, calculamos 10 días a partir de hoy
+      $('fecha').value = cli.fecha ? cli.fecha : calcularFechaFutura();
+      
+      guardarProgreso();
+      actualizarPreview();
+    });
+
+    // ==========================================
+    // ENVIAR Y OMITIR
+    // ==========================================
+    function avanzarSiguiente(omitirActual = false) {
+      if (clientesImportados.length === 0 || indexActual === -1) {
+        if (omitirActual) {
+           $('folio').value = ''; $('nombre').value = ''; $('monto').value = ''; $('telefono').value = '';
+        }
+        return;
+      }
+
+      if (!omitirActual) {
+        clientesImportados[indexActual].contactado = true;
+        enviadosHoy++;
+        localStorage.setItem('asesorWA_enviadosHoy', enviadosHoy);
+        localStorage.setItem('asesorWA_fechaHoy', hoyStr);
+      }
+
+      const select = $('selectCliente');
+      
+      const currentOption = select.options[indexActual + 1];
+      if (currentOption) {
+        let baseText = clientesImportados[indexActual].folio 
+          ? `${clientesImportados[indexActual].nombre} (${clientesImportados[indexActual].folio})` 
+          : clientesImportados[indexActual].nombre;
+        currentOption.textContent = clientesImportados[indexActual].contactado ? `✅ ${baseText}` : baseText;
+      }
+
+      actualizarProgreso();
+      
+      let nextIndex = -1;
+      for (let i = indexActual + 1; i < clientesImportados.length; i++) {
+        if (!clientesImportados[i].contactado) { nextIndex = i; break; }
+      }
+      if (nextIndex === -1) {
+        for (let i = 0; i < clientesImportados.length; i++) {
+          if (!clientesImportados[i].contactado) { nextIndex = i; break; }
+        }
+      }
+
+      if (nextIndex !== -1) {
+        select.value = nextIndex;
+        select.dispatchEvent(new Event('change'));
+        if (!omitirActual) mostrarToast(`✅ Enviado. Siguiente: ${clientesImportados[nextIndex].nombre}`);
+      } else {
+        select.value = "";
+        indexActual = -1;
+        $('folio').value = ''; $('nombre').value = ''; $('monto').value = ''; $('telefono').value = '';
+        guardarProgreso();
+        mostrarToast('🎉 ¡Ya contactaste a todos los de la lista!');
+      }
+    }
+
+    $('btnSend').addEventListener('click', () => {
+      let tel = $('telefono').value.replace(/\D/g, '');
+      const nombre = $('nombre').value.trim();
+      const monto = $('monto').value.trim();
+
+      if (!nombre) { mostrarToast('⚠️ Falta el nombre'); $('nombre').focus(); return; }
+      if (!monto) { mostrarToast('⚠️ Falta el monto de la oferta'); $('monto').focus(); return; }
+      if (tel.length < 10) { mostrarToast('⚠️ Teléfono inválido'); $('telefono').focus(); return; }
+
+      playClickSound();
+      vibrar();
+
+      if (tel.length === 10) tel = '52' + tel;
+      const textoFinal = construirMensaje();
+      window.open(`https://wa.me/${tel}?text=${encodeURIComponent(textoFinal)}`, '_blank');
+
+      avanzarSiguiente(false);
+    });
+
+    $('btnSkip').addEventListener('click', () => {
+      playClickSound();
+      avanzarSiguiente(true);
+      if(clientesImportados.length > 0) mostrarToast(`⏭️ Cliente omitido`);
+    });
+
+    // ==========================================
+    // INICIALIZACIÓN Y PWA
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+      const asesorGuardado = localStorage.getItem('asesorNombre');
+      if (asesorGuardado) $('asesor').value = asesorGuardado;
+      if(!$('fecha').value) $('fecha').value = calcularFechaFutura();
+      cargarProgreso();
+    });
+
+    $('asesor').addEventListener('input', (e) => {
+      localStorage.setItem('asesorNombre', e.target.value);
+    });
+
+    let deferredPrompt;
+    const btnInstall = $('btnInstall');
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    btnInstall.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') btnInstall.style.display = 'none';
+        deferredPrompt = null;
+      } else {
+        // Fallback: Instrucciones si el navegador no lo permite automático
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          alert('Para instalar en iPhone:\n\n1. Toca el botón "Compartir" (cuadrado con flecha).\n2. Desliza y selecciona "Añadir a pantalla de inicio".');
+        } else {
+          alert('Para instalar:\n\n1. Abre el menú de tu navegador (los 3 puntos).\n2. Selecciona "Instalar aplicación" o "Añadir a pantalla de inicio".\n\nNota: Si no aparece, asegúrate de tener conexión a internet y recarga la página.');
+        }
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
