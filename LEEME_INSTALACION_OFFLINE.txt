@@ -1,0 +1,38 @@
+ASESORA X WHATSAPP — V33 OFFLINE FIRST
+======================================
+
+CONTENIDO
+- index.html: aplicación anterior v32 con comprobación de estado offline en Ajustes.
+- sw.js: Service Worker nuevo que guarda la app y la librería externa de Excel.
+- manifest.json: manifiesto AMOLED compatible con el aportado anteriormente.
+
+INSTALACIÓN
+1. Haz respaldo de la aplicación y de tu cartera antes de actualizar. NO desinstales la PWA para actualizar: podrías perder datos locales.
+2. Publica index.html y sw.js en la MISMA carpeta de tu sitio HTTPS. Mantén manifest.json en esa carpeta.
+3. Conserva los iconos originales del repositorio en /icons/icon-192.png y /icons/icon-512.png.
+4. En el celular, abre la URL con datos móviles o una red PERMITIDA y espera a que cargue.
+5. En Ajustes > Contactos y respaldo > Funcionamiento sin internet, pulsa «Preparar uso sin conexión».
+6. Verifica la leyenda «Aplicación y herramientas Excel disponibles sin internet». Si indica que Excel está en caché pero no se pudo verificar, cierra y vuelve a abrir la app con datos móviles.
+7. Cierra completamente la aplicación, desactiva Wi-Fi y datos móviles (modo avión) y ábrela de nuevo.
+8. Prueba una gestión con DATOS FICTICIOS y, si corresponde, un Excel ficticio. Una instalación previa es necesaria; abrir un dominio bloqueado por primera vez NO funciona.
+
+QUÉ PUEDE HACER SIN INTERNET
+- Abrir la interfaz desde el caché del navegador, si se instaló correctamente.
+- Consultar los clientes que ya existan en el almacenamiento local del navegador.
+- Crear y modificar ofertas, copiar mensajes, guardar historial y realizar respaldos JSON.
+- Importar y exportar Excel SÓLO si SheetJS se descargó y quedó en caché; ver el indicador.
+- Preparar un SMS o una llamada con servicio celular (no requieren datos móviles tradicionales).
+
+LIMITACIONES
+- WhatsApp necesita conectividad con sus servidores; la aplicación no envía WhatsApp offline.
+- El dictado depende del motor de reconocimiento de voz del dispositivo y puede requerir internet.
+- El Service Worker NO sincroniza carteras entre dispositivos ni garantiza conservación perpetua de datos.
+- Cambiar de dominio, borrar almacenamiento, reinstalar o políticas de empresa pueden eliminar la caché y los clientes locales.
+- En redes con bloqueos, la app puede funcionar desde la caché ya preparada. Esta solución no evade políticas ni filtros; usa los archivos guardados legalmente en el dispositivo.
+- SheetJS se descarga una vez desde el CDN existente (versión 0.20.0); este ZIP no incluye una copia local del archivo por las limitaciones del entorno de preparación. Para máxima independencia futura se recomienda alojar localmente una copia autorizada de la biblioteca.
+- La app contiene información de clientes en localStorage. Utiliza datos reales únicamente si las políticas de BBVA autorizan ese tratamiento, dispositivo, ubicación y respaldo.
+
+NOTAS TÉCNICAS
+- El Service Worker almacena sólo index.html, manifest.json, iconos disponibles y la librería pública SheetJS; no guarda Excel de clientes ni respuestas de WhatsApp.
+- La barra AMOLED y los estilos Liquid Glass se mantienen.
+- Si ya existe un sw.js, sustituirlo requiere revisar su compatibilidad y preparar un plan de reversión.
