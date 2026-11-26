@@ -1,0 +1,50 @@
+ASESORA X WHATSAPP - VERSION 35
+================================
+
+ARCHIVOS A SUBIR A GITHUB PAGES (en la misma carpeta):
+  index.html     ACTUALIZADO - Nueva fila Producto/Fijar e Invitar/Seguros/Porta;
+                            frases estables por gestion, SMS compacto e icono offline.
+  sw.js          ACTUALIZADO - Cache de aplicacion v35 para actualizar la PWA.
+  manifest.json  SIN CAMBIOS respecto de la version 34; se incluye por comodidad.
+
+Conserva la carpeta icons/ y demas archivos existentes del repositorio.
+
+FUNCIONES NUEVAS:
+  - Dos recuadros independientes en UNA fila.
+  - Seguros y Porta activos por defecto para instalaciones nuevas; preferencias
+    guardadas de sesiones previas se respetan.
+  - Invitaciones NO ocupan los tres espacios de ofertas.
+  - La invitacion de seguros no se duplica con un seguro principal o adicional.
+  - Tres frases de Seguros y tres de Portabilidad, elegidas por gestion y
+    estables durante la edicion y el envio.
+  - Con tres ofertas se utilizan versiones mas cortas de las invitaciones.
+  - SMS independiente, mas corto, sin asteriscos ni emojis.
+  - Icono pequeno sin texto SOLO cuando el servidor no es accesible; la
+    comprobacion usa manifest.json con un parametro de cache y NO envia datos.
+  - Respaldos incluyen nuevos ajustes de portabilidad y frases.
+
+IMPORTANTE:
+  1. Guarda una copia de tu version anterior y de tus respaldos.
+  2. Publica index.html y sw.js juntos. El manifest NO cambio.
+  3. Abre la app con datos moviles/una red autorizada y permite que se actualice
+     el Service Worker. Si la Wi-Fi corporativa bloquea el sitio antes de la
+     primera carga, el sistema offline no puede instalarse por si solo.
+  4. En Ajustes > Contactos y respaldo > Funcionamiento sin internet, prepara
+     los recursos y comprueba Excel. La libreria SheetJS continua dependiendo
+     de una primera descarga; no se incluye localmente en el ZIP.
+  5. Prueba con un contacto ficticio: Excel, captura manual, WA, SMS, seguros,
+     portabilidad, actualizacion y retorno del navegador Android.
+
+PRUEBAS EN ESTE ENTORNO:
+  - Sintaxis JavaScript index.html y sw.js: correcta.
+  - 43 comprobaciones aisladas en Chromium: correctas.
+  - Anchos 320, 360, 385 y 430 px y ausencia de desbordamiento horizontal.
+  - No fue posible navegar realmente a un servidor HTTPS/HTTP ni probar el
+    envio de WhatsApp/SMS en el Android del usuario. Las pruebas de interfaz
+    se realizaron con el HTML cargado de forma aislada y redes simuladas.
+
+SEGURIDAD Y COMUNICACION:
+  - Utiliza datos de clientes solo en dispositivos y entornos autorizados.
+  - Ofrece descuentos solo cuando exista promocion vigente y aplicable.
+  - El indicador refleja imposibilidad de acceder al sitio; no identifica
+    por si mismo si el problema es bloqueo, fallo DNS o una caida del sitio.
